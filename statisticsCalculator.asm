@@ -5,72 +5,91 @@
 ; “Largest number 13 was found at location 1”.
 
 section .data
-a: dq 2
-b: dq 0
+array_size: dq 5
+a: dq 0
+sum: dq 0
+average: dq 0.0
 ind: dq 0
 cnt: dq 0
 cnt2: dq 0
-mini: dq 0
-maxi: dq 0
 min_pos: dq 0
 max_pos: dq 0
 fmt: db "%lld ",10,0
 fmt_in_int: db "%lld", 0
 fmt_in_char: db "%c", 0
-fmt_out_max: db "The largest number at index %lld is: %lld ", 10, 0
-fmt_out_min: db "The smallest number at index %lld is: %lld ", 10, 0
+fmt_out_input_array_size: db "Digite o tamanho do array: ", 0
+fmt_out_min: db "O menor número é: %lld ", 10, 0
+fmt_out_max: db "O maior número é: %lld ", 10, 0
+fmt_out_average: db "A média é: %lf", 10, 0
 fmt_out_menu_prompt: db "Escolha uma opção:", 10
-				db "1. Inserir array", 10
-				db "2. Calcular média", 10
-				db "3. Calcular variância/desvio padrão", 10
-				db "4. Encontrar moda", 10
-				db "5. Sair", 10
+				db "1. Definir tamanho do array", 10
+				db "2. Inserir array", 10
+				db "3. Encontrar valor máximo", 10
+				db "4. Encontrar valor mínimo", 10
+				db "5. Calcular média", 10
+				db "6. Calcular variância/desvio padrão", 10
+				db "7. Sair", 10
 				db "Opção: ", 0
 fmt_out_error_msg: db "Entrada inválida! Tente novamente.", 10, 0
 fmt_out_input_msg: db "Digite o número: ", 0
 
 section .bss
 array resq 21
-array2 resq 21
-input_char resb 1
 input_int resq 1
+min resq 1
+max resq 1
 
 section .text
 global main
 extern printf, scanf, getch
 
 main:
-push RBP
+	push RBP
 
-mov RAX, 0
-mov RCX, 0
-mov RBX, 0
+	mov RAX, 0
+	mov RCX, 0
+	mov RBX, 0
 
 MAIN_MENU:
-mov RDI, fmt_out_menu_prompt
-call printf
-mov byte [input_char] ,0
-mov RDI, fmt_in_char
-mov RSI, input_char
-call scanf
+	mov RDI, fmt_out_menu_prompt
+	call printf
+	mov RDI, fmt_in_int
+	mov RSI, input_int
+	call scanf
 
-cmp byte [input_char], '1'
-	jz INPUT_ARRAY
-cmp byte [input_char], '5'
-	jz END
+	cmp byte [input_int], 1
+		je DEFINE_ARRAY_SIZE
+	cmp byte [input_int], 2
+		je INPUT_ARRAY
+	cmp byte [input_int], 3
+		je PRINT_MAX
+	cmp byte [input_int], 4
+		je PRINT_MIN
+	cmp byte [input_int], 5
+		je PRINT_AVERAGE
+	cmp byte [input_int], 7
+		je END
 
-; Opção inválida
-mov RDI, fmt_out_error_msg
-call printf
-jmp MAIN_MENU
+	; Opção inválida
+	mov RDI, fmt_out_error_msg
+	call printf
+	jmp MAIN_MENU
+
+DEFINE_ARRAY_SIZE:
+	mov RDI, fmt_out_input_array_size
+	call printf
+	mov RDI, fmt_in_int
+	mov RSI, array_size
+	call scanf
+	jmp MAIN_MENU
 
 INPUT_ARRAY: 
+	mov RCX, [cnt]
+	cmp RCX, [array_size]
+	jz DONE
 	mov RDI, fmt_out_input_msg
 	call printf
-	
-	mov RCX, [cnt]
-	cmp RCX, 5
-	jz DONE
+
 	mov RAX, 0
 	mov RDI, fmt_in_int
 	mov RSI, a
@@ -78,7 +97,7 @@ INPUT_ARRAY:
 	mov RAX, [a]
 	mov RCX, [cnt]
 	mov [array+RCX*8], RAX
-	mov [array2+RCX*8], RAX
+	; mov [array2+RCX*8], RAX
 	add RBX, [a]
 	inc RCX
 	mov [cnt], RCX
@@ -87,85 +106,129 @@ INPUT_ARRAY:
 DONE:
 	mov RAX, 0
 	mov RCX, 0
-	mov RBX, 0	
+	mov RBX, 0
+	mov qword [cnt], 0
+
+LOOP:
+	cmp RCX, [array_size]
+	je calculate_average
+
+	mov RAX, [array + RCX*8]
+	add [sum], RAX
+
+	cmp RCX, 0
+	jne skip_first_min_max
+	mov [min], RAX
+	mov [max], RAX
+	
+	skip_first_min_max:
+	cmp RAX, [min]
+	jl update_min
+	jmp skip_min
+
+	update_min:
+	mov [min], RAX
+
+	skip_min:
+	cmp RAX, [max]
+	jg update_max
+	jmp skip_max
+
+	update_max:
+	mov [max], RAX
+
+	skip_max:
+	inc RCX
+	jmp LOOP
+
+	calculate_average:
+	cvtsi2sd xmm0, [sum]
+	cvtsi2sd xmm1, [array_size]
+
+	divsd xmm0, xmm1
+	movsd [average], xmm0
+
 	jmp MAIN_MENU
 
-OUTER_LOOP:
-	cmp RCX, 5
-	jge END_LOOP
-	mov [cnt], RCX
-	mov RAX, [array+RCX*8]
-
-INNER_LOOP:
-	inc RCX
-	cmp RCX, 5
-	jz OK
-	cmp RAX, [array+RCX*8]
-	jle INNER_LOOP
-	xchg RAX, [array+RCX*8]
-	jmp INNER_LOOP
-
-OK:
-	mov RCX, [cnt]
-	mov [array+RCX*8], RAX
-	inc RCX
-	jmp OUTER_LOOP
-
-END_LOOP:
-	mov RAX, 0
-	mov RBX, 0
-	mov RCX, 0
-	mov RAX, [array+RCX*8]
-	mov [mini], RAX
-
-	mov RCX, 4	
-	mov RAX, [array+RCX*8]
-	mov [maxi], RAX
-	
-
-	mov RCX, 0
-	mov RAX, 0
-	mov RBX, 0	
-
-FIND_MAX:
-	cmp RCX, 5
-	mov [cnt], RCX	
-	jz PRINT_MAX
-	mov RAX, [maxi]
-	mov RBX, [array2+RCX*8]
-	cmp RAX, RBX
-	jz PRINT_MAX
-	mov RCX, [cnt]
-	inc RCX
-	jmp FIND_MAX
-
 PRINT_MAX:
-	mov RAX, [maxi]
 	mov RDI, fmt_out_max
-	mov RDX, RAX
+	mov RSI, [max]
 	call printf
-	mov RCX, 0
-	mov RAX, 0
-	mov RBX, 0
-
-FIND_MIN:
-	cmp RCX, 5
-	mov [cnt], RCX	
-	jz PRINT_MIN
-	mov RAX, [mini]
-	mov RBX, [array2+RCX*8]
-	cmp RAX, RBX
-	jz PRINT_MIN
-	mov RCX, [cnt]
-	inc RCX
-	jmp FIND_MIN
+	jmp MAIN_MENU
 
 PRINT_MIN:
-	mov RAX, [mini]
 	mov RDI, fmt_out_min
-	mov RSI, RCX
-	mov RDX, RAX
+	mov RSI, [min]
 	call printf
+	jmp MAIN_MENU
+
+PRINT_AVERAGE:
+	mov RDI, fmt_out_average
+	movsd xmm0, [average]
+	mov RAX, 1
+	call printf
+	jmp MAIN_MENU
+
+; OUTER_LOOP:
+; 	cmp RCX, 5
+; 	jge END_LOOP
+; 	mov [cnt], RCX
+; 	mov RAX, [array+RCX*8]
+
+; INNER_LOOP:
+; 	inc RCX
+; 	cmp RCX, 5
+; 	jz OK
+; 	cmp RAX, [array+RCX*8]
+; 	jle INNER_LOOP
+; 	xchg RAX, [array+RCX*8]
+; 	jmp INNER_LOOP
+
+; OK:
+; 	mov RCX, [cnt]
+; 	mov [array+RCX*8], RAX
+; 	inc RCX
+; 	jmp OUTER_LOOP
+
+; FIND_MAX:
+; 	cmp RCX, 5
+; 	mov [cnt], RCX	
+; 	jz PRINT_MAX
+; 	mov RAX, [max]
+; 	mov RBX, [array2+RCX*8]
+; 	cmp RAX, RBX
+; 	jz PRINT_MAX
+; 	mov RCX, [cnt]
+; 	inc RCX
+; 	jmp FIND_MAX
+
+; PRINT_MAX:
+; 	mov RAX, [max]
+; 	mov RDI, fmt_out_max
+; 	mov RDX, RAX
+; 	call printf
+; 	mov RCX, 0
+; 	mov RAX, 0
+; 	mov RBX, 0
+
+; FIND_MIN:
+; 	cmp RCX, 5
+; 	mov [cnt], RCX	
+; 	jz PRINT_MIN
+; 	mov RAX, [min]
+; 	mov RBX, [array2+RCX*8]
+; 	cmp RAX, RBX
+; 	jz PRINT_MIN
+; 	mov RCX, [cnt]
+; 	inc RCX
+; 	jmp FIND_MIN
+
+; PRINT_MIN:
+; 	mov RAX, [min]
+; 	mov RDI, fmt_out_min
+; 	mov RSI, RCX
+; 	mov RDX, RAX
+; 	call printf
 
 
 END:
