@@ -16,13 +16,13 @@ min_pos: dq 0
 max_pos: dq 0
 fmt: db "%lld ",10,0
 fmt_in_int: db "%lld", 0
-fmt_out_input_array_size: db "Digite o tamanho do array: ", 0
-fmt_out_min: db "O menor número é: %lld ", 10, 0
-fmt_out_max: db "O maior número é: %lld ", 10, 0
-fmt_out_average: db "A média é: %lf", 10, 0
-fmt_out_variancia_desvio_padrao: db "Variância: %lf", 10
+fmt_out_input_array_size: db 10, "Digite o tamanho do array: ", 0
+fmt_out_min: db 10, "O menor número é: %lld ", 10, 0
+fmt_out_max: db 10, "O maior número é: %lld ", 10, 0
+fmt_out_average: db 10, "A média é: %lf", 10, 0
+fmt_out_variancia_desvio_padrao: db 10, "Variância: %lf", 10
 								db "Desvio Padrão: %lf", 10, 0
-fmt_out_menu_prompt: db "Escolha uma opção:", 10
+fmt_out_menu_prompt: db 10, "Escolha uma opção:", 10
 				db "1. Definir tamanho do array", 10
 				db "2. Inserir array", 10
 				db "3. Encontrar valor máximo", 10
@@ -31,7 +31,7 @@ fmt_out_menu_prompt: db "Escolha uma opção:", 10
 				db "6. Calcular variância/desvio padrão", 10
 				db "7. Sair", 10
 				db "Opção: ", 0
-fmt_out_error_msg: db "Entrada inválida! Tente novamente.", 10, 0
+fmt_out_error_msg: db 10, "Entrada inválida! Tente novamente.", 10, 0
 fmt_out_input_msg: db "Digite o número: ", 0
 
 section .bss
