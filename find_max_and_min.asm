@@ -4,7 +4,7 @@
 ; “Smallest number -5 was found at location 2”.
 ; “Largest number 13 was found at location 1”.
 
-section .data
+segment .data
 a: dq 2
 b: dq 0
 ind: dq 0
@@ -14,30 +14,19 @@ mini: dq 0
 maxi: dq 0
 min_pos: dq 0
 max_pos: dq 0
-fmt: db "%lld ",10,0
-fmt_in_int: db "%lld", 0
-fmt_in_char: db "%c", 0
-fmt_out_max: db "The largest number at index %lld is: %lld ", 10, 0
-fmt_out_min: db "The smallest number at index %lld is: %lld ", 10, 0
-fmt_out_menu_prompt: db "Escolha uma opção:", 10
-				db "1. Inserir array", 10
-				db "2. Calcular média", 10
-				db "3. Calcular variância/desvio padrão", 10
-				db "4. Encontrar moda", 10
-				db "5. Sair", 10
-				db "Opção: ", 0
-fmt_out_error_msg: db "Entrada inválida! Tente novamente.", 10, 0
-fmt_out_input_msg: db "Digite o número: ", 0
+fmt: dq "%lld ",10,0
+fmt_in: dq "%lld", 0
+fmt_out_max: dq "The largest number at index %lld is: %lld ", 10, 0
+fmt_out_min: dq "The smallest number at index %lld is: %lld ", 10, 0
 
-section .bss
+segment .bss
 array resq 21
 array2 resq 21
-input_char resb 1
-input_int resq 1
 
-section .text
+segment .text
 global main
-extern printf, scanf, getch
+extern printf
+extern scanf
 
 main:
 push RBP
@@ -46,49 +35,26 @@ mov RAX, 0
 mov RCX, 0
 mov RBX, 0
 
-MAIN_MENU:
-mov RDI, fmt_out_menu_prompt
-call printf
-mov byte [input_char] ,0
-mov RDI, fmt_in_char
-mov RSI, input_char
-call scanf
-
-cmp byte [input_char], '1'
-	jz INPUT_ARRAY
-cmp byte [input_char], '5'
-	jz END
-
-; Opção inválida
-mov RDI, fmt_out_error_msg
-call printf
-jmp MAIN_MENU
-
 INPUT_ARRAY: 
-	mov RDI, fmt_out_input_msg
-	call printf
-	
-	mov RCX, [cnt]
 	cmp RCX, 5
 	jz DONE
+	mov [cnt], RCX
 	mov RAX, 0
-	mov RDI, fmt_in_int
+	mov RDI, fmt_in
 	mov RSI, a
 	call scanf
 	mov RAX, [a]
 	mov RCX, [cnt]
 	mov [array+RCX*8], RAX
 	mov [array2+RCX*8], RAX
-	add RBX, [a]
-	inc RCX
-	mov [cnt], RCX
-	jmp INPUT_ARRAY
+	add RBX, [a]	
+	inc RCX	
+	jmp INPUT_ARRAY 
 
 DONE:
 	mov RAX, 0
 	mov RCX, 0
 	mov RBX, 0	
-	jmp MAIN_MENU
 
 OUTER_LOOP:
 	cmp RCX, 5
@@ -99,9 +65,9 @@ OUTER_LOOP:
 INNER_LOOP:
 	inc RCX
 	cmp RCX, 5
-	jz OK
-	cmp RAX, [array+RCX*8]
-	jle INNER_LOOP
+	jz OK 
+	cmp RAX, [array+RCX*8]		
+	jle INNER_LOOP		
 	xchg RAX, [array+RCX*8]
 	jmp INNER_LOOP
 
@@ -142,6 +108,7 @@ FIND_MAX:
 PRINT_MAX:
 	mov RAX, [maxi]
 	mov RDI, fmt_out_max
+	mov RSI, RCX
 	mov RDX, RAX
 	call printf
 	mov RCX, 0
@@ -170,5 +137,5 @@ PRINT_MIN:
 
 END:
 	mov RAX, 0
-    pop RBP
+	pop RBP
 ret
