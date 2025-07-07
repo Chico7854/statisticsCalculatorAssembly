@@ -16,11 +16,12 @@ min_pos: dq 0
 max_pos: dq 0
 fmt: db "%lld ",10,0
 fmt_in_int: db "%lld", 0
-fmt_in_char: db "%c", 0
 fmt_out_input_array_size: db "Digite o tamanho do array: ", 0
 fmt_out_min: db "O menor número é: %lld ", 10, 0
 fmt_out_max: db "O maior número é: %lld ", 10, 0
 fmt_out_average: db "A média é: %lf", 10, 0
+fmt_out_variancia_desvio_padrao: db "Variância: %lf", 10
+								db "Desvio Padrão: %lf", 10, 0
 fmt_out_menu_prompt: db "Escolha uma opção:", 10
 				db "1. Definir tamanho do array", 10
 				db "2. Inserir array", 10
@@ -38,6 +39,8 @@ array resq 21
 input_int resq 1
 min resq 1
 max resq 1
+variancia resq 1
+desvio resq 1
 
 section .text
 global main
@@ -67,6 +70,8 @@ MAIN_MENU:
 		je PRINT_MIN
 	cmp byte [input_int], 5
 		je PRINT_AVERAGE
+	cmp byte [input_int], 6
+		je VARIANCIA
 	cmp byte [input_int], 7
 		je END
 
@@ -97,7 +102,6 @@ INPUT_ARRAY:
 	mov RAX, [a]
 	mov RCX, [cnt]
 	mov [array+RCX*8], RAX
-	; mov [array2+RCX*8], RAX
 	add RBX, [a]
 	inc RCX
 	mov [cnt], RCX
@@ -108,6 +112,8 @@ DONE:
 	mov RCX, 0
 	mov RBX, 0
 	mov qword [cnt], 0
+	mov qword [variancia], 0
+	mov qword [sum], 0
 
 LOOP:
 	cmp RCX, [array_size]
@@ -148,6 +154,7 @@ LOOP:
 	divsd xmm0, xmm1
 	movsd [average], xmm0
 
+	xor RCX, RCX
 	jmp MAIN_MENU
 
 PRINT_MAX:
@@ -169,67 +176,39 @@ PRINT_AVERAGE:
 	call printf
 	jmp MAIN_MENU
 
-; OUTER_LOOP:
-; 	cmp RCX, 5
-; 	jge END_LOOP
-; 	mov [cnt], RCX
-; 	mov RAX, [array+RCX*8]
+VARIANCIA:
+	mov RAX, [array + RCX*8]
+	cvtsi2sd xmm0, RAX
+	subsd xmm0, [average]
+	mulsd xmm0, xmm0
 
-; INNER_LOOP:
-; 	inc RCX
-; 	cmp RCX, 5
-; 	jz OK
-; 	cmp RAX, [array+RCX*8]
-; 	jle INNER_LOOP
-; 	xchg RAX, [array+RCX*8]
-; 	jmp INNER_LOOP
+	movsd xmm1, [variancia]
+	addsd xmm1, xmm0
+	movsd [variancia], xmm1
 
-; OK:
-; 	mov RCX, [cnt]
-; 	mov [array+RCX*8], RAX
-; 	inc RCX
-; 	jmp OUTER_LOOP
+	inc RCX
+	cmp RCX, [array_size]
+	jl VARIANCIA
 
-; FIND_MAX:
-; 	cmp RCX, 5
-; 	mov [cnt], RCX	
-; 	jz PRINT_MAX
-; 	mov RAX, [max]
-; 	mov RBX, [array2+RCX*8]
-; 	cmp RAX, RBX
-; 	jz PRINT_MAX
-; 	mov RCX, [cnt]
-; 	inc RCX
-; 	jmp FIND_MAX
+	; divisao
+	movsd xmm0, [variancia]
+	cvtsi2sd xmm1, [array_size]
+	divsd xmm0, xmm1
+	movsd [variancia], xmm0
 
-; PRINT_MAX:
-; 	mov RAX, [max]
-; 	mov RDI, fmt_out_max
-; 	mov RDX, RAX
-; 	call printf
-; 	mov RCX, 0
-; 	mov RAX, 0
-; 	mov RBX, 0
+DESVIO_PADRAO:
+	sqrtsd xmm0, xmm0
+	movsd [desvio], xmm0
 
-; FIND_MIN:
-; 	cmp RCX, 5
-; 	mov [cnt], RCX	
-; 	jz PRINT_MIN
-; 	mov RAX, [min]
-; 	mov RBX, [array2+RCX*8]
-; 	cmp RAX, RBX
-; 	jz PRINT_MIN
-; 	mov RCX, [cnt]
-; 	inc RCX
-; 	jmp FIND_MIN
+	; printf
+	movsd xmm0, [variancia]
+	movsd xmm1, [desvio]
+	mov RDI, fmt_out_variancia_desvio_padrao
+	mov RAX, 1
+	call printf
 
-; PRINT_MIN:
-; 	mov RAX, [min]
-; 	mov RDI, fmt_out_min
-; 	mov RSI, RCX
-; 	mov RDX, RAX
-; 	call printf
-
+	xor RCX, RCX
+	jmp MAIN_MENU
 
 END:
 	mov RAX, 0
